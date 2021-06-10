@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8e1d7b09-be15-469b-bccd-57204bb88935" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="39082fdf-40fd-4be5-8b18-6943e7f277fd" >
+		<email:smtp-connection host="smtp.gmail.com" port="587" user="pavanrequest@gmail.com" password="killbillpandey" >
+			<email:properties >
+				<email:property key="mail.smtp.starttls.enable" value="true" />
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
+	<flow name="cowinFlow" doc:id="e4f4d5bc-adce-4a7f-92b8-d033ed552582" >
+		<http:listener doc:name="Listener" doc:id="eba4059d-1dbc-4cff-8f32-532391e070c3" config-ref="HTTP_Listener_config" path="cowin"/>
+		<set-variable value="#[payload.pincode]" doc:name="pincode" doc:id="76b73449-0735-4ce3-bc9b-79e0e2820a47" variableName="pincode"/>
+		<set-variable value="#[payload.date]" doc:name="date" doc:id="364cf554-2445-42c6-92bb-7fd7548ceaeb" variableName="date"/>
+		<http:request method="GET" doc:name="Request" doc:id="efe2422a-ef5c-4dfd-ab01-f90a7fecfddc" url="https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/findByPin">
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	date : vars.date,
+	pincode : vars.pincode
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="54105e69-11bf-48cb-8752-0f5c5ac2fcb9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="c1bc4f38-9b88-43db-ab51-43112b2aa7a5" message="#[payload]"/>
+		<email:send doc:name="Send" doc:id="50120b8b-4fe8-4a67-9192-2c1069fd210d" config-ref="Email_SMTP" fromAddress="pavanrequest@gmail.com" subject="DOSES AVAILABLE">
+			<email:to-addresses >
+				<email:to-address value="pavan.kalyan1819@gmail.com" />
+			</email:to-addresses>
+		</email:send>
+	</flow>
+</mule>
